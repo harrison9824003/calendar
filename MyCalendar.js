@@ -9,9 +9,11 @@
 			與呼叫時候傳入的物件合併成 setting
 		*/
 		var defaults = {
+			//當下月份
 			tarDate: new Date(),
 			language: "zh_tw_full",
 			supportedLangs: ['zh_tw'],
+			//欄位樣式
 			class_week: {
 				0:'sun',
 				6:'sat',
@@ -21,13 +23,15 @@
 				4:'thu',
 				5:'fri'
 			},
+			//行事曆table樣式
 			table_set:{
 				width:'100%',
 				border:'0',
 				cellspacing:'0',
 				cellpadding:'',
 				class:'table calendar-table'
-			}
+			},
+			calendar_mode:'month'
 		}
 
 		let setting  = $.extend( {}, defaults, options);
@@ -46,26 +50,27 @@
 			self 將 this 存到 self
 		*/
 
+		let self = this;
 		let today 			= new Date();
 		let toolBlock 		= "toolBlock";
 		let dataBlock 		= "dataBlock";
-		let calendarMonth 	= getCurrMonth();
-		let calendarYear 	= getCurrYear();
-		let currIndex 		= getBegin();
 		let week_text		= {
 				zh_tw : ['日','一','二','三','四','五','六'],
 				zh_tw_full : ['星期日','星期一','星期二','星期三','星期四','星期五','星期六']
 			};
-	    let firstDay 	= getFirstDay();
-		let currMonth 	= getCurrMonth();
-		let self = this;
+		
+		let calendarMonth 	= getCurrMonth();
+		let calendarYear 	= getCurrYear();
+		let currIndex 		= getBegin();
+		let currMonth 		= getCurrMonth();
+	    let firstDay 		= getFirstDay();
 
 		//日期格式
 		function date_format(date){
 			return date.getFullYear()+"/"+(date.getMonth()+1)+"/"+date.getDate();
 		}
 
-		//建立 table th thead
+		//建立行事曆 table th thead
 		function settable()
 		{
 			var table = $("<table />");
@@ -89,40 +94,38 @@
 		    return table;
 		}	    
 
-		//取得當下月份日期
+		//取得當下月份日期，目前月份第一天 00:00:00(object)
 		function getFDate()
 		{
-			return new Date(new Date(setting.tarDate.setDate(1)).setHours(0,0,0,0));   // 目前月份第一天 00:00:00(object)
+			return new Date(new Date(setting.tarDate.setDate(1)).setHours(0,0,0,0));
 		}
 
-		//取得檔下月份星期幾
+		//取得當下月份的第一天是星期幾
 		function getFirstDay()
 		{
-			return getFDate().getDay();   // 目前月份第一天星期
+			return getFDate().getDay();  
 		}
 
-		//取得檔下月份
+		//取得當下月份
 		function getCurrMonth()
 		{
-			return getFDate().getMonth();    // 目前月份
+			return getFDate().getMonth();
 		}
 
 		//取得當下年份
 		function getCurrYear()
 		{
-			return getFDate().getFullYear();    // 目前年份
+			return getFDate().getFullYear();
 		}
 
-		//取得開始日期
+		//取得當下月份行事曆的開始日期，以該月份該週的第一天
 		function getBegin()
 		{
 			var begin;
-			if(getFirstDay()==0)
-		    {
+			if(getFirstDay()==0){
 		        begin = new Date(getFDate().getTime()-86400*7*1000);
 		    }
-		    else
-		    {
+		    else{
 		        begin = new Date(getFDate().getTime()-86400*getFirstDay()*1000);
 		    }
 		    return begin;
@@ -132,42 +135,57 @@
 		function bindNextMonth(selector)
 		{
 			//綁定下個月
-			self.find(selector).on('click', function(){
+			self.find(selector).off().on('click', function(){
 
 				var next;
 		
-				if(currMonth==11)
-				{
+				if(currMonth==11){
 			        next = 1;
 			        calendarYear++;
 			    }
 			    else{
 			        next = currMonth+2;
 			    }
-			    
-			    self.empty();
-			    self.MyCalendar({ tarDate :new Date(new Date().setFullYear(calendarYear, next, 0))});
+
+			    // currIndex 		= getBegin();
+			    setting.tarDate = new Date(new Date().setFullYear(calendarYear, next, 0));
+
+			    calendarMonth 	= getCurrMonth();
+				calendarYear 	= getCurrYear();
+				currIndex 		= getBegin();
+				currMonth 		= getCurrMonth();
+			    firstDay 		= getFirstDay();
+
+			    setToolBlock();
+		    	setDateBlock();
 			});
 		}	
 
 		//綁定上一個月事件
 		function bindPreMonth(selector)
 		{
-			self.find(selector).on('click', function(){
+			self.find(selector).off().on('click', function(){
 
 				var prev;
 
-				if(currMonth==0)
-				{
+				if(currMonth==0){
 			        prev = 12;
 			        calendarYear--;
 			    }
 			    else{
 			        prev = currMonth;
 			    }
+
+			    setting.tarDate = new Date(new Date().setFullYear(calendarYear, prev, 0));
+
+			    calendarMonth 	= getCurrMonth();
+				calendarYear 	= getCurrYear();
+				currIndex 		= getBegin();
+				currMonth 		= getCurrMonth();
+			    firstDay 		= getFirstDay();
 			    
-			    self.empty();
-			    self.MyCalendar({ tarDate :new Date(new Date().setFullYear(calendarYear, prev, 0))});
+			   	setToolBlock();
+		    	setDateBlock();
 			});
 		}
 
@@ -175,13 +193,11 @@
 		//建立按鈕工具列
 		function setToolBlock()
 		{
-
+			// 工具列html
 			var tool_tmp = '<div class="cal-header"><div class="prev-month"><button class="week_prev"><i class="fa fa-angle-double-left pr-2"></i>上一個月</button></div><div class="now-month"></div><div class="next-month"><button class="week_next">下一個月<i class="fa fa-angle-double-right pl-2"></i></button></div></div>';
 
-			self.find("."+toolBlock).append(tool_tmp);
-
-			//切換年月標題
-			self.find(".now-month").html(calendarYear+'年'+((currMonth+1)<10 ? '0'+(currMonth+1) : (currMonth+1))+'月');
+			//工具列內容
+			self.find("."+toolBlock).empty().append(tool_tmp);
 
 			//綁定下個月
 			bindNextMonth(".week_next");
@@ -189,11 +205,14 @@
 			//綁定上個月
 			bindPreMonth(".week_prev");
 
-			//行事曆切換
-			// self.append('<div class="class_type"><button id="calendar_on" tabindex="100">月曆</button><button id="calendar_list" tabindex="100">列表</button></div><br/>');
+			//切換年月標題
+			self.find(".now-month").html(calendarYear+'年'+((currMonth+1)<10 ? '0'+(currMonth+1) : (currMonth+1))+'月');
 
+
+			//行事曆模式切換按鈕綁定事件
 			self.find("#calendar_on").on('click', function(){
 			    
+			    //清空內容
 			    self.empty();
 			    self.MyCalendar({ tarDate :new Date(new Date().setFullYear(calendarYear, currMonth+1, 0))});
 
@@ -202,12 +221,13 @@
 			self.find("#calendar_list").on('click', function(){
 			    
 			    self.empty();
-			    // self.MyCalendar({ tarDate :new Date(new Date().setFullYear(calendarYear, currMonth+1, 0))});		    
+			    // self.MyCalendar({ tarDate :new Date(new Date().setFullYear(calendarYear, currMonth+1, 0))});
 			});
 		}
 
-		function setDateBlock()
-		{
+		//建立月份行事曆
+		function generate_month_view(){
+
 			var table_body = $("<tbody />");
 			for(let i=0; i<6; i++)
 			{
@@ -240,22 +260,68 @@
 		    }
 		    
 		    //設定第當天css
-		    table_body.find("[data-date='"+date_format(today)+"']").addClass('today');		    
+		    table_body.find("[data-date='"+date_format(today)+"']").addClass('today');
 
-	    	// 放入天數欄位
-	    	self.find("."+dataBlock).append(settable().append(table_body));
-
-	    	//ajax資料
-	    	self.MyCalendar_ajax(calendarYear, currMonth+1);
+		    return table_body;	    	
 		}
 
-		//建立顯示
-		(function(){
+		function generate_week_view(){
 
-			//產生工具列
+		}
+
+		/*
+			檢查 ajax 處理 function 是否存在，若存在將資料放在 talbe 中
+		*/
+		function setdata(){
+
+			if( typeof $.fn.MyCalendar_ajax !== "undefined" && typeof $.fn.MyCalendar_ajax === "function" ){
+
+				//取得 ajax 資料
+		    	var data = $.fn.MyCalendar_ajax(calendarYear, currMonth+1);
+
+				for(var x in data)
+				{
+					self.find("[data-date='"+data[x]["date"]+"']").append('<div class="'+data[x]["class"]+'">'+data[x]["title"]+'</div>');
+				}
+			}
+		}
+
+		/*
+			建立行事曆得畫面，依照 setting.calendar_mode 條件來決定執行的結果
+		*/
+		function setDateBlock()
+		{
+			let table_body;
+			
+			//篩選建立行事曆內容
+			switch(setting.calendar_mode){
+				case 'month':
+					table_body = generate_month_view();
+					break;
+				case 'week':
+					table_body = generate_week_view();
+					break;
+				default:
+					table_body = generate_month_view();
+			}
+
+			
+	    	self.find("."+dataBlock).empty().append(settable().append(table_body));
+
+	    	setdata();
+			
+		}
+
+		/*
+			建立顯示畫面，產生工具列區域、產生行事曆區域
+		*/
+		(function(){
+			
 	    	self.append($("<div />").addClass(toolBlock));
-	    	self.append($("<div />").addClass(dataBlock));
 	    	setToolBlock();
+
+	    	
+	    	self.append($("<div />").addClass(dataBlock));
 	    	setDateBlock();
 
 		})();
@@ -263,30 +329,28 @@
 	    return self;
 	};
 
+	//預設 ajax 顯示資料只負責顯示資料
 	$.fn.MyCalendar_ajax = function(){
 
 		var year = arguments[0];
 		var month = arguments[1];
 		var data = [
-			{date:"2018/8/1", title:"科技產業 - 我是小小工程師", href:"#", class:'cal-category-1'},
-			{date:"2018/8/1", title:"青年創業之3D列印(上)", href:"#", class:'cal-category-2'},
-			{date:"2018/8/3", title:"真幌站前多田便利屋", href:"#", class:'cal-category-3'},
-			{date:"2018/8/4", title:"青年創業之3D列印(上)", href:"#", class:'cal-category-4'},
-			{date:"2018/8/5", title:"真幌站前多田便利屋", href:"#", class:'cal-category-5'},
-			{date:"2018/8/6", title:"青年創業之3D列印(上)", href:"#", class:'cal-category-6'},
-			{date:"2018/8/7", title:"真幌站前多田便利屋", href:"#", class:'cal-category-7'},
+			{date:"2018/8/1", title:"測試資料1", href:"#", class:'cal-category-1'},
+			{date:"2018/8/1", title:"測試資料2", href:"#", class:'cal-category-2'},
+			{date:"2018/8/3", title:"測試資料3", href:"#", class:'cal-category-3'},
+			{date:"2018/8/4", title:"測試資料4", href:"#", class:'cal-category-4'},
+			{date:"2018/8/5", title:"測試資料5", href:"#", class:'cal-category-5'},
+			{date:"2018/8/6", title:"測試資料6", href:"#", class:'cal-category-6'},
+			{date:"2018/8/7", title:"測試資料7", href:"#", class:'cal-category-7'},
 		];
 
-		for(var x in data)
-		{
-			$("[data-date='"+data[x]["date"]+"']").append('<div class="'+data[x]["class"]+'">'+data[x]["title"]+'</div>');
-		}
-
-		// return this;
+		return data;
 	};
 
 })(window, jQuery);
 
 $(function(){
-	$("[data-calendar='']").MyCalendar();
+	$("[data-calendar='']").MyCalendar({
+		// calendar_mode:'week'
+	});
 });
